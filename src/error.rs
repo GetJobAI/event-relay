@@ -6,10 +6,10 @@ pub enum AppError {
     Config(#[from] envy::Error),
 
     #[error("Error interacting with the DB: {0}")]
-    DB(String),
+    DB(#[from] sqlx::Error),
 
     #[error("Error interacting with the Notifications Broker: {0}")]
-    Broker(String),
+    Broker(#[from] lapin::Error),
 }
 
 pub type Result<T> = std::result::Result<T, AppError>;

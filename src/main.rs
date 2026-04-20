@@ -1,5 +1,5 @@
-use event_relay::{Config, Result, init_tracing};
-use tracing::{debug, info};
+use event_relay::{Broker, Config, DbListener, Result, init_tracing};
+use tracing::{debug, error, info};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -10,13 +10,21 @@ async fn main() -> Result<()> {
     info!("Starting Event Relay service...");
     debug!(config = ?config, "Loaded configuration");
 
-    // TODO(pencelheimer): connect to the DB and RMQ
+    let mut db_listener = DbListener::connect(&config.db_url, "db_events").await?;
+    let rmq_publisher = Broker::connect(&config.rmq_url, "db_events_exchange").await?;
 
     info!("Service initialized successfully. Waiting for events...");
+    loop {
+        let payload = db_listener.next_event().await?;
+        debug!(payload = payload, "Received event",);
 
-    // NOTE(pencelheimer): unwrap is ok, because we are shutting down
-    tokio::signal::ctrl_c().await.unwrap();
-    info!("Shutting down...");
+        // TODO(pencelheimer): parse payload to set routing_key dynamically
+        let routing_key = "database.event";
+        if let Err(e) = rmq_publisher.publish_event(routing_key, &payload).await {
+            error!(error = %e, "Failed to publish event to RabbitMQ");
+            continue;
+        }
 
-    Ok(())
+        info!("Relayed event successfully");
+    }
 }
