@@ -1,4 +1,4 @@
-use crate::error::Result;
+use crate::{error::Result, models::DbEvent};
 use sqlx::postgres::PgListener;
 use tracing::instrument;
 
@@ -19,10 +19,12 @@ impl DbListener {
     }
 
     #[instrument(skip_all)]
-    pub async fn next_event(&mut self) -> Result<String> {
+    pub async fn next_event(&mut self) -> Result<DbEvent> {
         let notification = self.listener.recv().await?;
+        let payload = notification.payload();
 
-        let payload = notification.payload().to_string();
-        Ok(payload)
+        let event = serde_json::from_str::<DbEvent>(payload)?;
+
+        Ok(event)
     }
 }

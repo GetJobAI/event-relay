@@ -1,4 +1,4 @@
-use crate::error::Result;
+use crate::{error::Result, models::DbEvent};
 use lapin::{
     BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
     options::{BasicPublishOptions, ExchangeDeclareOptions},
@@ -49,20 +49,16 @@ impl Broker {
         skip_all,
         fields(routing_key = %routing_key.as_ref())
     )]
-    pub async fn publish_event(
-        &self,
-        routing_key: impl AsRef<str>,
-        payload: impl AsRef<str>,
-    ) -> Result<()> {
+    pub async fn publish_event(&self, routing_key: impl AsRef<str>, event: &DbEvent) -> Result<()> {
         let routing_key = routing_key.as_ref();
-        let payload = payload.as_ref();
+        let payload_bytes = serde_json::to_vec(event)?;
 
         self.channel
             .basic_publish(
                 self.exchange.clone().into(),
                 routing_key.into(),
                 BasicPublishOptions::default(),
-                payload.as_bytes(),
+                &payload_bytes,
                 BasicProperties::default().with_delivery_mode(2), // NOTE(pencelheimer): 2 = Persistent
             )
             .await?;

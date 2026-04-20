@@ -2,6 +2,7 @@ mod broker;
 mod config;
 mod db;
 mod error;
+mod models;
 mod telemetry;
 
 pub use broker::Broker;

@@ -10,6 +10,9 @@ pub enum AppError {
 
     #[error("Error interacting with the Notifications Broker: {0}")]
     Broker(#[from] lapin::Error),
+
+    #[error("Error serialising data: {0}")]
+    Serialisztion(#[from] serde_json::Error),
 }
 
 pub type Result<T> = std::result::Result<T, AppError>;

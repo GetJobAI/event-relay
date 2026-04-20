@@ -15,13 +15,12 @@ async fn main() -> Result<()> {
 
     info!("Service initialized successfully. Waiting for events...");
     loop {
-        let payload = db_listener.next_event().await?;
-        debug!(payload = payload, "Received event",);
+        let event = db_listener.next_event().await?;
+        debug!(payload = ?event, "Received event");
 
-        // TODO(pencelheimer): parse payload to set routing_key dynamically
-        let routing_key = "database.event";
-        if let Err(e) = rmq_publisher.publish_event(routing_key, &payload).await {
-            error!(error = %e, "Failed to publish event to RabbitMQ");
+        let routing_key = event.to_string();
+        if let Err(e) = rmq_publisher.publish_event(&routing_key, &event).await {
+            error!(error = %e, routing_key, "Failed to publish event to RabbitMQ");
             continue;
         }
 
