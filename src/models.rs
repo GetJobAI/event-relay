@@ -7,6 +7,8 @@ pub struct DbEvent {
     pub action: String,
     pub id: String,
     pub timestamp: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<serde_json::Value>,
 }
 
 impl fmt::Display for DbEvent {

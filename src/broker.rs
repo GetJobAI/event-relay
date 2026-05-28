@@ -51,7 +51,10 @@ impl Broker {
     )]
     pub async fn publish_event(&self, routing_key: impl AsRef<str>, event: &DbEvent) -> Result<()> {
         let routing_key = routing_key.as_ref();
-        let payload_bytes = serde_json::to_vec(event)?;
+        let payload_bytes = match &event.data {
+            Some(data) => serde_json::to_vec(data)?,
+            None => serde_json::to_vec(event)?,
+        };
 
         self.channel
             .basic_publish(
